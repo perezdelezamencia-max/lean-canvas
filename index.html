@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lean Canvas — ImpacTech</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f3;
+    --surface2: #eeece9;
+    --border: #e9e9e7;
+    --text: #37352f;
+    --muted: #9b9a97;
+    --accent: #2ecc71;
+    --accent-bg: #f0fdf4;
+    --accent-border: #bbf7d0;
+    --teal: #0ea5e9;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --sidebar-w: 220px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 18px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot {
+    width: 20px; height: 20px;
+    background: var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; font-weight: 700;
+  }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sidebar-nav { padding: 8px 8px; flex: 1; }
+  .nav-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 8px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--muted);
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+  .nav-item.done { color: var(--text); }
+  .nav-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+  .nav-check { margin-left: auto; color: var(--accent); font-size: 12px; }
+
+  /* Progress */
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); }
+  .progress-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    padding: 0 40px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-breadcrumb { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .topbar-breadcrumb span { color: var(--text); font-weight: 500; }
+  .save-status {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .save-dot.saved { background: var(--accent); }
+  .save-dot.saving { background: var(--warn); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .content-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 48px 60px;
+    max-width: 760px;
+  }
+
+  /* ── STEPS ── */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: fadeUp 0.25s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── TYPOGRAPHY ── */
+  .step-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .step-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .step-title em { color: var(--accent); font-style: normal; }
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.65;
+    max-width: 540px;
+    margin-bottom: 32px;
+  }
+  .divider { height: 1px; background: var(--border); margin: 28px 0; }
+
+  /* ── FIELDS ── */
+  .field { margin-bottom: 24px; }
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    resize: vertical;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    line-height: 1.5;
+  }
+  input[type="text"]:hover, textarea:hover { border-color: #c8c7c4; }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px rgba(55,53,47,0.08);
+  }
+  input::placeholder, textarea::placeholder { color: #c1c0bd; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* ── TAGS ── */
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12.5px;
+    color: var(--text);
+    cursor: default;
+  }
+  .tag-del { cursor: pointer; color: var(--muted); font-size: 13px; line-height: 1; }
+  .tag-del:hover { color: var(--danger); }
+  .tag-add-row { display: flex; gap: 8px; margin-top: 8px; }
+  .tag-add-row input { flex: 1; }
+  .btn-sm {
+    padding: 8px 14px;
+    border-radius: 5px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    white-space: nowrap;
+    transition: all 0.1s;
+  }
+  .btn-sm:hover { background: var(--surface); }
+  .btn-sm.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-sm.primary:hover { opacity: 0.85; }
+
+  /* ── CERTAINTY ── */
+  .certainty-row { display: flex; gap: 8px; margin-top: 6px; }
+  .cert-btn {
+    flex: 1; padding: 7px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-align: center;
+  }
+  .cert-btn:hover { border-color: var(--text); color: var(--text); }
+  .cert-btn.sel-red { background: #fef2f2; border-color: #fca5a5; color: var(--danger); }
+  .cert-btn.sel-yellow { background: #fffbeb; border-color: #fcd34d; color: var(--warn); }
+  .cert-btn.sel-green { background: var(--accent-bg); border-color: var(--accent-border); color: #16a34a; }
+  .certainty-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .cert-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  /* ── 5 WHYS ── */
+  .why-chain { display: flex; flex-direction: column; }
+  .why-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+  .why-left { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+  .why-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--text); color: var(--bg);
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .why-num.root { background: var(--accent); }
+  .why-line { width: 1px; height: 14px; background: var(--border); margin: 3px 0; }
+  .why-content { flex: 1; }
+  .why-field-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+
+  /* ── HYPOTHESIS ── */
+  .hyp-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .hyp-preview {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+    min-height: 48px;
+    font-style: italic;
+  }
+  .hyp-preview.has-content { color: var(--text); font-style: normal; }
+  .hyp-blank { border-bottom: 1.5px solid var(--accent); color: var(--text); font-weight: 500; padding: 0 2px; }
+
+  /* ── DFV ── */
+  .dfv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .dfv-card {
+    padding: 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .dfv-card.full { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .dfv-icon { font-size: 20px; margin-bottom: 8px; }
+  .dfv-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .dfv-desc { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+  .semaforo { display: flex; gap: 6px; margin-top: 8px; }
+  .sem-btn {
+    flex: 1; height: 28px; border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.1s; background: transparent;
+  }
+  .sem-btn.r:hover, .sem-btn.r.sel { background: #ef4444; border-color: #ef4444; }
+  .sem-btn.y:hover, .sem-btn.y.sel { background: #f59e0b; border-color: #f59e0b; }
+  .sem-btn.g:hover, .sem-btn.g.sel { background: var(--accent); border-color: var(--accent); }
+
+  /* ── MVP ── */
+  .mvp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .mvp-cell {
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    transition: border-color 0.15s;
+  }
+  .mvp-cell:focus-within { border-color: #c8c7c4; }
+  .mvp-cell.full { grid-column: span 2; }
+  .mvp-cell-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .mvp-cell-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  /* ── NAV BUTTONS ── */
+  .btn-row { display: flex; gap: 10px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    width: 260px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+  .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .panel-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 10px; }
+  .preview-item { margin-bottom: 10px; }
+  .preview-item-title { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .preview-item-text { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+
+  /* ── TIP BOX ── */
+  .tip-section { padding: 16px; flex: 1; }
+  .tip-header { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .tip-quote {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-style: italic;
+    transition: opacity 0.25s;
+  }
+  .tip-author { font-size: 11px; color: var(--muted); margin-top: 8px; font-style: normal; font-weight: 500; }
+  .theory-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--accent-bg);
+    color: #16a34a;
+    border: 1px solid var(--accent-border);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  /* ── AUTOFILL BADGE ── */
+  .autofill-note {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .autofill-note .clear { cursor: pointer; text-decoration: underline; color: var(--muted); background: none; border: none; font: inherit; font-size: 11px; padding: 0; }
+  .autofill-note .clear:hover { color: var(--text); }
+
+  /* ── COMPLETE ── */
+  .complete-screen { display: none; padding: 60px; text-align: center; }
+  .complete-screen.active { display: block; animation: fadeUp 0.3s ease; }
+  .complete-emoji { font-size: 48px; margin-bottom: 20px; display: block; }
+  .complete-title { font-size: 26px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .complete-title em { color: var(--accent); font-style: normal; }
+  .complete-desc { font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto 32px; }
+  .final-grid { max-width: 580px; margin: 0 auto; display: grid; gap: 10px; text-align: left; }
+  .final-card { padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; }
+  .final-card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+  .final-card-text { font-size: 13.5px; color: var(--text); line-height: 1.6; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 1100px) { .right-panel { display: none; } .content { max-width: 100%; padding: 36px 32px; } }
+  @media (max-width: 720px) { .sidebar { display: none; } .content { padding: 24px 20px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-name"><div class="logo-dot">L</div> Lean Canvas</div>
+      <div class="logo-sub">ImpacTech · Crea i Llança</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Pasos</div>
+      <div class="nav-item active" onclick="goTo(0)" id="nav-0"><span class="nav-icon">📋</span> Tu proyecto</div>
+      <div class="nav-item" onclick="goTo(1)" id="nav-1"><span class="nav-icon">🔍</span> Asunciones</div>
+      <div class="nav-item" onclick="goTo(2)" id="nav-2"><span class="nav-icon">💡</span> Hipótesis</div>
+      <div class="nav-item" onclick="goTo(3)" id="nav-3"><span class="nav-icon">⚖️</span> DFV Check</div>
+      <div class="nav-item" onclick="goTo(4)" id="nav-4"><span class="nav-icon">🚀</span> MVP Boceto</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="progress-label">
+        <span id="prog-label">Paso 1 de 5</span>
+        <span id="prog-pct">20%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:20%"></div></div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">Lean Canvas <span>/</span> <span id="tb-step">Tu proyecto</span></div>
+      <div class="save-status">
+        <div class="save-dot" id="save-dot"></div>
+        <span id="save-label">Sin cambios</span>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="content" id="main-content">
+
+        <!-- ══ STEP 0 ══ Tu proyecto -->
+        <div class="step-panel active" id="step-0">
+          <div class="step-eyebrow">Paso 1 · Punto de partida</div>
+          <h1 class="step-title">Tu <em>proyecto</em></h1>
+          <p class="step-desc">Todo empieza por un problema real que has observado en el mundo. Antes de proponer soluciones, necesitamos entender qué duele y a quién. Recuerda: todo lo que escribes aquí es una <strong>hipótesis</strong>, no un hecho.</p>
+
+          <div class="field">
+            <div class="field-label">Nombre del proyecto</div>
+            <div class="field-hint">¿Cómo se llama tu iniciativa? No tiene que ser definitivo.</div>
+            <input type="text" id="project-name" placeholder="Ej: Revitalización de Pueblo Viejo, Vestidor Global..." oninput="onInput()">
+          </div>
+
+          <div class="field">
+            <div class="field-label">¿Qué problema ves en el mundo?</div>
+            <div class="field-hint">Sé específico. No hables de la solución todavía. ¿Qué duele exactamente?</div>
+            <textarea id="problem-desc" rows="4" placeholder="Ej: Los jóvenes abandonan los pueblos rurales porque no encuentran servicios, empleo digital ni comunidad..." oninput="onInput()"></textarea>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <div class="field-label">¿A quién afecta?</div>
+              <div class="field-hint">Define tu usuario/cliente principal</div>
+              <input type="text" id="who" placeholder="Ej: Jóvenes 25-35 años, teletrabajadores..." oninput="onInput()">
+            </div>
+            <div class="field">
+              <div class="field-label">¿Dónde está ese usuario?</div>
+              <div class="field-hint">Contexto geográfico o sector</div>
+              <input type="text" id="where" placeholder="Ej: España rural, sector moda..." oninput="onInput()">
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">¿Cómo lo resuelve el mercado hoy?</div>
+            <div class="field-hint">¿Qué hace tu usuario para lidiar con el problema actualmente? ¿Qué alternativas tiene?</div>
+            <textarea id="alternatives" rows="3" placeholder="Ej: Se van a ciudades, usan coworking urbanos, compran ropa extra para cada viaje..." oninput="onInput()"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-sm primary" onclick="goTo(1)">Siguiente → Asunciones</button>
+          </div>
+        </div>
+
+        <!-- ══ STEP 1 ══ Asunciones -->
+        <div class="step-panel" id="step-1">
+          <div class="step-eyebrow">Paso 2 · Asunciones</div>
+          <h1 class="step-title">¿Qué estás <em>asumiendo?</em></h1>
+          <p class="step-desc">Todo es hipotético hasta que se demuestre lo contrario. Escribe lo que das por hecho. Ser honesto sobre tus puntos ciegos es el primer paso para superarlos.</p>
+
+          <div class="field">
+            <div class="field-label">Mis asunciones principales</div>
+            <div class="field-hint">Completa: "Asumo que..." — Añade mínimo 3. Sé radical/a en la honestidad.</div>
+            <div class="tag-add-row">
+              <input type="text" id="assumption-input" placeholder='Ej: "Asumo que hay suficiente demanda de teletrabajadores rurales"' onkeydown="if(event.key==='Enter')addTag()">
+              <button class="btn-sm" onclick="addTag()">+ Añadir</button>
+            </div>
+            <div class="tag-wrap" id="assumptions"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Nivel de certeza por asunción</div>
+            <div class="field-hint">¿Cuánto sabes realmente de cada una? Las rojas son tus mayores riesgos.</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;margin-top:6px;">
+              <input type="text" id="cert-item" placeholder="Escribe una asunción clave...">
+              <button class="btn-sm" onclick="addCertainty()" style="height:38px">+ Añadir</button>
+            </div>
+            <div class="certainty-row">
+              <button class="cert-btn" onclick="selectCert(this,'red')">❓ No sé</button>
+              <button class="cert-btn" onclick="selectCert(this,'yellow')">🤔 Intuyo</button>
+              <button class="cert-btn" onclick="selectCert(this,'green')">✅ Seguro</button>
+            </div>
+            <div class="certainty-list" id="certainty-list"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Los 5 Whys — Llega a la causa raíz</div>
+            <div class="field-hint">Toma tu asunción más importante y pregúntate "¿Por qué?" 5 veces. Así llegas al problema raíz.</div>
+            <div class="why-chain" id="why-chain">
+              <div class="why-row">
+                <div class="why-left"><div class="why-num root">P</div><div class="why-line"></div></div>
+                <div class="why-content">
+                  <div class="why-field-label">Problema inicial</div>
+                  <input type="text" id="why-0" placeholder="Escribe el problema principal..." oninput="onInput()">
+                </div>
+              </div>
+              <div id="why-extra"></div>
+            </div>
+            <button class="btn-sm" style="margin-top:10px" onclick="addWhy()">+ ¿Por qué?</button>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-sm" onclick="goTo(0)">← Volver</button>
+            <button class="btn-sm primary" onclick="goTo(2)">Siguiente → Hipótesis</button>
+          </div>
+        </div>
+
+        <!-- ══ STEP 2 ══ Hipótesis -->
+        <div class="step-panel" id="step-2">
+          <div class="step-eyebrow">Paso 3 · Hipótesis</div>
+          <h1 class="step-title">Formula tus <em>hipótesis</em></h1>
+          <p class="step-desc">Una buena hipótesis es <strong>comprobable</strong> (verdadero/falso), <strong>concreta</strong> (¿quién? ¿qué? ¿cómo?) y <strong>precisa</strong> (una sola asunción). Evita el sesgo de confirmación: formula también la hipótesis contraria.</p>
+
+          <div class="field">
+            <div class="field-label">Hipótesis de Problema</div>
+            <div class="field-hint">Creo que <usuario> tiene <problema> que no puede resolver bien en el mercado actual.</div>
+            <div class="hyp-box">
+              <div class="two-col">
+                <div>
+                  <div class="why-field-label">¿Quién es tu usuario?</div>
+                  <input type="text" id="hyp-p-who" placeholder="Ej: jóvenes teletrabajadores de 25-35 años" oninput="buildHypP(); onInput()">
+                </div>
+                <div>
+                  <div class="why-field-label">¿Cuál es su problema concreto?</div>
+                  <input type="text" id="hyp-p-problem" placeholder="Ej: no encuentran espacios de trabajo en zonas rurales" oninput="buildHypP(); onInput()">
+                </div>
+              </div>
+              <div style="margin-top:12px">
+                <div class="why-field-label">¿Qué hace ahora para resolverlo?</div>
+                <input type="text" id="hyp-p-alt" placeholder="Ej: se desplazan a ciudades o trabajan desde casa en aislamiento" oninput="buildHypP(); onInput()">
+              </div>
+              <div class="hyp-preview" id="hyp-p-preview">Tu hipótesis de problema aparecerá aquí...</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Hipótesis de Solución</div>
+            <div class="field-hint">Creo que <solución> resolverá <problema> mejor que las alternativas actuales.</div>
+            <div class="hyp-box">
+              <div>
+                <div class="why-field-label">¿Cuál es tu solución?</div>
+                <input type="text" id="hyp-s-sol" placeholder="Ej: un espacio de coworking rural con vivienda compartida" oninput="buildHypS(); onInput()">
+              </div>
+              <div style="margin-top:12px">
+                <div class="why-field-label">¿Qué valor único aporta frente a las alternativas?</div>
+                <input type="text" id="hyp-s-val" placeholder="Ej: combina trabajo remoto con comunidad y coste de vida bajo" oninput="buildHypS(); onInput()">
+              </div>
+              <div class="hyp-preview" id="hyp-s-preview">Tu hipótesis de solución aparecerá aquí...</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Hipótesis de Negocio</div>
+            <div class="field-hint">Creo que <usuario> estará dispuesto a pagar <cuánto> por <qué>.</div>
+            <div class="hyp-box">
+              <div class="two-col">
+                <div>
+                  <div class="why-field-label">¿Quién pagará?</div>
+                  <input type="text" id="hyp-b-who" placeholder="Ej: teletrabajadores jóvenes" oninput="buildHypB(); onInput()">
+                </div>
+                <div>
+                  <div class="why-field-label">¿Cuánto / cómo?</div>
+                  <input type="text" id="hyp-b-how" placeholder="Ej: 400€/mes por alojamiento + espacio" oninput="buildHypB(); onInput()">
+                </div>
+              </div>
+              <div class="hyp-preview" id="hyp-b-preview">Tu hipótesis de negocio aparecerá aquí...</div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-sm" onclick="goTo(1)">← Volver</button>
+            <button class="btn-sm primary" onclick="goTo(3)">Siguiente → DFV Check</button>
+          </div>
+        </div>
+
+        <!-- ══ STEP 3 ══ DFV -->
+        <div class="step-panel" id="step-3">
+          <div class="step-eyebrow">Paso 4 · Validación estratégica</div>
+          <h1 class="step-title">Check <em>DFV</em></h1>
+          <p class="step-desc">Toda idea de negocio debe superar tres filtros: que alguien la quiera <strong>(Deseabilidad)</strong>, que puedas construirla <strong>(Factibilidad)</strong> y que genere dinero <strong>(Viabilidad)</strong>. ¿En cuál tienes menos certeza?</p>
+
+          <div class="dfv-grid">
+            <div class="dfv-card">
+              <div class="dfv-icon">💡</div>
+              <div class="dfv-title">Deseabilidad</div>
+              <div class="dfv-desc">¿La solución tiene una propuesta de valor relevante para el cliente? ¿El cliente final existe y está dispuesto a cambiar?</div>
+              <textarea id="dfv-des" rows="3" placeholder="¿Qué evidencias tienes de que tu usuario quiere esto? ¿Has hablado con ellos?" style="font-size:13px;" oninput="onInput()"></textarea>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px">Nivel de certeza:</div>
+              <div class="semaforo">
+                <button class="sem-btn r" onclick="setSem(this,'des',0)" title="Baja"></button>
+                <button class="sem-btn y" onclick="setSem(this,'des',1)" title="Media"></button>
+                <button class="sem-btn g" onclick="setSem(this,'des',2)" title="Alta"></button>
+              </div>
+            </div>
+            <div class="dfv-card">
+              <div class="dfv-icon">⚙️</div>
+              <div class="dfv-title">Factibilidad</div>
+              <div class="dfv-desc">¿La organización puede desarrollar la solución? ¿Tiene los recursos, capacidades y puede superar las barreras legales?</div>
+              <textarea id="dfv-fac" rows="3" placeholder="¿Qué capacidades tenéis? ¿Qué os falta? ¿Hay barreras técnicas o legales?" style="font-size:13px;" oninput="onInput()"></textarea>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px">Nivel de certeza:</div>
+              <div class="semaforo">
+                <button class="sem-btn r" onclick="setSem(this,'fac',0)"></button>
+                <button class="sem-btn y" onclick="setSem(this,'fac',1)"></button>
+                <button class="sem-btn g" onclick="setSem(this,'fac',2)"></button>
+              </div>
+            </div>
+            <div class="dfv-card full">
+              <div>
+                <div class="dfv-icon">💰</div>
+                <div class="dfv-title">Viabilidad</div>
+                <div class="dfv-desc">¿Es económicamente sostenible? ¿La estructura de costes e ingresos funciona? ¿Cuántos clientes necesitas para ser rentable?</div>
+              </div>
+              <div>
+                <textarea id="dfv-via" rows="3" placeholder="¿Cuál es la estructura de ingresos? ¿Los costes son asumibles? ¿Cuántos clientes necesitas?" style="font-size:13px;" oninput="onInput()"></textarea>
+                <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px">Nivel de certeza:</div>
+                <div class="semaforo">
+                  <button class="sem-btn r" onclick="setSem(this,'via',0)"></button>
+                  <button class="sem-btn y" onclick="setSem(this,'via',1)"></button>
+                  <button class="sem-btn g" onclick="setSem(this,'via',2)"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:18px">
+            <div class="field-label">¿Cuál es el riesgo más crítico?</div>
+            <div class="field-hint">¿Qué eje del DFV representa el mayor riesgo ahora mismo? Es lo primero que debes validar.</div>
+            <textarea id="dfv-risk" rows="3" placeholder="Ej: El mayor riesgo es la deseabilidad — no hemos hablado aún con teletrabajadores para confirmar que querrían mudarse..." oninput="onInput()"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-sm" onclick="goTo(2)">← Volver</button>
+            <button class="btn-sm primary" onclick="goTo(4)">Siguiente → MVP Boceto</button>
+          </div>
+        </div>
+
+        <!-- ══ STEP 4 ══ MVP -->
+        <div class="step-panel" id="step-4">
+          <div class="step-eyebrow">Paso 5 · Producto Mínimo Viable</div>
+          <h1 class="step-title">Boceto de tu <em>MVP</em></h1>
+          <p class="step-desc">El MVP no es el producto perfecto: es el mínimo experimento que permite aprender si tu hipótesis es válida. La regla: el MVP más barato que imaginas todavía es demasiado caro. <strong>Redúcelo a la mitad.</strong></p>
+
+          <div class="mvp-grid">
+            <div class="mvp-cell full" style="border-color: var(--accent-border); background: var(--accent-bg);">
+              <div class="mvp-cell-title" style="color:#16a34a">¿Qué hipótesis valida este MVP?</div>
+              <div class="mvp-cell-desc">La hipótesis más crítica que necesitas confirmar o refutar</div>
+              <input type="text" id="mvp-hyp" placeholder="Ej: Los teletrabajadores jóvenes pagarán 400€/mes por vivir y trabajar en un pueblo con comunidad digital" oninput="onInput()">
+            </div>
+            <div class="mvp-cell">
+              <div class="mvp-cell-title">¿Qué es lo mínimo que puedes construir?</div>
+              <div class="mvp-cell-desc">La versión más simple del producto o servicio</div>
+              <textarea id="mvp-build" rows="4" placeholder="Ej: 3 habitaciones en casa del alcalde + mesa compartida + wifi. Sin app ni plataforma." oninput="onInput()"></textarea>
+            </div>
+            <div class="mvp-cell">
+              <div class="mvp-cell-title">¿Cómo lo probarás?</div>
+              <div class="mvp-cell-desc">Método de validación concreto y barato</div>
+              <textarea id="mvp-test" rows="4" placeholder="Ej: Post en 3 grupos LinkedIn + landing de reserva. Si recibimos 5 reservas en 2 semanas, validamos." oninput="onInput()"></textarea>
+            </div>
+            <div class="mvp-cell">
+              <div class="mvp-cell-title">¿Qué métrica define el éxito?</div>
+              <div class="mvp-cell-desc">Un número específico: "5 reservas pagadas" o "10 emails de interés"</div>
+              <textarea id="mvp-metric" rows="3" placeholder="Ej: 5 reservas en 2 semanas = hipótesis validada. Menos de 2 = pivotamos." oninput="onInput()"></textarea>
+            </div>
+            <div class="mvp-cell">
+              <div class="mvp-cell-title">¿Qué aprendes si falla?</div>
+              <div class="mvp-cell-desc">El fracaso también es aprendizaje validado</div>
+              <textarea id="mvp-fail" rows="3" placeholder="Ej: Si nadie reserva, necesitamos entender si falla el precio, la ubicación o la propuesta." oninput="onInput()"></textarea>
+            </div>
+            <div class="mvp-cell full">
+              <div class="mvp-cell-title">Recursos y timeline</div>
+              <div class="mvp-cell-desc">¿Qué necesitas? ¿Cuándo puedes lanzar?</div>
+              <div class="two-col" style="gap:10px">
+                <textarea id="mvp-resources" rows="3" placeholder="Recursos: wifi, habitaciones, redes sociales, landing page..." oninput="onInput()"></textarea>
+                <textarea id="mvp-timeline" rows="3" placeholder="Sem 1: preparar. Sem 2-3: publicar y medir. Sem 4: decisión." oninput="onInput()"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-sm" onclick="goTo(3)">← Volver</button>
+            <button class="btn-sm primary" onclick="showComplete()">🎯 Ver resumen final</button>
+          </div>
+        </div>
+
+        <!-- COMPLETE -->
+        <div class="complete-screen" id="complete-screen">
+          <span class="complete-emoji">🚀</span>
+          <h2 class="complete-title">Canvas <em>completado</em></h2>
+          <p class="complete-desc">Tienes el boceto de tu modelo Lean. Ahora toca salir a validar. Recuerda lo más importante: <em>"o vendemos, o aprendemos."</em></p>
+          <div class="final-grid" id="final-grid"></div>
+          <div class="btn-row" style="justify-content:center;margin-top:32px;border:none;padding:0">
+            <button class="btn-sm" onclick="goTo(0)">← Editar canvas</button>
+            <button class="btn-sm primary" onclick="window.print()">🖨 Guardar PDF</button>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+
+      <!-- RIGHT PANEL -->
+      <aside class="right-panel">
+        <div class="panel-section">
+          <div class="panel-label">Vista previa</div>
+          <div id="preview-area">
+            <p style="font-size:12px;color:var(--muted)">Empieza a escribir para ver el resumen aquí.</p>
+          </div>
+        </div>
+        <div class="tip-section">
+          <div class="tip-header">💬 Teoría</div>
+          <div class="tip-quote" id="tip-text">Todo lo que escribes aquí es una hipótesis. Ningún plan de negocio sobrevive el primer contacto con el mercado.</div>
+          <div class="tip-author" id="tip-author"></div>
+          <div class="theory-tag" id="tip-tag" style="display:none"></div>
+        </div>
+      </aside>
+    </div><!-- /content-area -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════
+// SUPABASE CONFIG — reemplazar con tus valores reales
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'SUPABASE_URL_PLACEHOLDER';
+const SUPABASE_ANON_KEY = 'SUPABASE_ANON_KEY_PLACEHOLDER';
+
+let supabase = null;
+try {
+  if (SUPABASE_URL !== 'SUPABASE_URL_PLACEHOLDER') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch(e) { console.warn('Supabase no configurado:', e); }
+
+// ── SESSION ID ──
+let sessionId = localStorage.getItem('lean_canvas_session');
+if (!sessionId) {
+  sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+  localStorage.setItem('lean_canvas_session', sessionId);
+}
+
+// ── STATE ──
+let currentStep = 0;
+let certColor = 'red';
+let whyCount = 0;
+let saveTimer = null;
+
+const stepNames = ['Tu proyecto','Asunciones','Hipótesis','DFV Check','MVP Boceto'];
+
+// ── TIPS based on PDF theory ──
+const TIPS = [
+  // Step 0
+  [
+    { text: 'Todo lo que escribes aquí es una hipótesis. Ningún plan de negocio sobrevive el primer contacto con el mercado.', author: '— Lean Startup I, ImpacTech', tag: 'Aprendizaje #1' },
+    { text: 'Sé concreto con el problema. No "no hay trabajo en el pueblo" sino "los jóvenes de 25-35 no pueden teletrabajar en zonas rurales por falta de infraestructura digital."', author: '— ImpacTech · 5 Whys', tag: 'Asunciones' },
+    { text: '¿Puedes cuantificar el tiempo, dinero o esfuerzo que tu usuario emplea en este problema? Cuanto más duele, más dispuesto estará a pagar.', author: '— Hipótesis de Problema', tag: 'DFV · Deseabilidad' },
+    { text: 'El 42% de las startups fracasan porque no hay necesidad en el mercado. Antes de la solución: ¿suficientes personas tienen este problema?', author: '— Eric Ries, The Lean Startup', tag: 'Estadística clave' },
+  ],
+  // Step 1
+  [
+    { text: 'Asumo que… Sé radical en la honestidad. Los proyectos fallidos suelen tener muchas asunciones ocultas que sus creadores nunca cuestionaron.', author: '— Lean Startup I, ImpacTech', tag: 'Asunciones' },
+    { text: 'Las asunciones "rojas" (no sé) son tus mayores riesgos. Diseña tu MVP para validarlas primero.', author: '— Aprendizaje validado · Eric Ries', tag: 'Aprendizaje #3' },
+    { text: 'Cuidado con el sesgo de confirmación: buscamos información que confirme lo que ya creemos. Formula también la hipótesis contraria.', author: '— Lean Startup I · Sesgos', tag: '7 Sesgos cognitivos' },
+    { text: 'Los 5 Whys revelan la causa raíz. "Hay pérdida de población joven" → ¿Por qué? → "Falta de servicios" → ¿Por qué? → Llega al núcleo real.', author: '— Sakichi Toyoda · Lean Manufacturing', tag: '5 Whys' },
+  ],
+  // Step 2
+  [
+    { text: 'Una buena hipótesis es comprobable (verdadero/falso), concreta (¿quién? ¿qué? ¿cómo?) y precisa (una sola asunción). Si no cumple los tres, refínala.', author: '— Lean Startup I, ImpacTech', tag: 'Calidad de hipótesis' },
+    { text: '"Creemos que los viajeros prefieren alquilar ropa" es mejor hipótesis que "creemos que les irá bien". Siempre verdadero/falso.', author: '— Ejemplo Vestidor Global', tag: 'Hipótesis comprobable' },
+    { text: 'Evita hipótesis compuestas: "los viajeros valoran la reducción de peso Y la comodidad" son DOS hipótesis. Sepáralas y pruébalas por separado.', author: '— Lean Startup I · Precisión', tag: 'Hipótesis precisa' },
+    { text: 'Startups centradas en mercado (escuchan, pivotan, encajan) triunfan. Las centradas en producto (idean, desarrollan sin validar) fracasan.', author: '— Lean Startup I · Dos tipos de startups', tag: 'Aprendizaje #2' },
+  ],
+  // Step 3
+  [
+    { text: 'Deseabilidad: ¿está dispuesto el usuario a cambiar cómo lidia hoy con el problema para adoptar tu solución? Si no, el problema no duele suficiente.', author: '— DFV Framework · ImpacTech', tag: 'DFV · Deseabilidad' },
+    { text: 'WeWork falló en Viabilidad: 12.000M$ invertidos, valoración máxima 47.000M$, pero el modelo era insostenible en costes. El DFV habría alertado antes.', author: '— Caso WeWork · ImpacTech', tag: 'DFV · Caso real' },
+    { text: 'Factibilidad: si te falta alguna capacidad o recurso, ¿puedes adquirirlo a corto plazo? ¿Cuánto te costaría? ¿Hay barreras legales?', author: '— DFV Framework · ImpacTech', tag: 'DFV · Factibilidad' },
+    { text: 'Valida primero el eje más frágil. Si la deseabilidad es roja, no inviertas en factibilidad todavía. Primero confirma que alguien lo quiere.', author: '— Lean Startup I · Priorización', tag: 'DFV · Estrategia' },
+  ],
+  // Step 4
+  [
+    { text: '"El aprendizaje validado es la unidad fundamental de progreso en el emprendimiento." El MVP es el vehículo para obtener ese aprendizaje.', author: '— Eric Ries, The Lean Startup', tag: 'Aprendizaje #3' },
+    { text: 'Construir → Medir → Aprender. Confiar en el proceso iterativo puede salvar tu startup. Justin Kan pivotó de "vida en vivo" hasta crear Twitch.', author: '— Lean Startup · Ciclo iterativo', tag: 'Aprendizaje #4' },
+    { text: 'El MVP 1 del caso "Pueblo Viejo": alojamiento + espacio de trabajo + cuota mínima. Sin app, sin plataforma. ¿Cuántos se apuntan? Eso es todo lo que necesitas saber primero.', author: '— ImpacTech · Caso práctico', tag: 'MVP ejemplo' },
+    { text: '"O vendemos, o aprendemos." No existe el fracaso si extraes aprendizaje validado. Lo único inaceptable es iterar sin aprender.', author: '— Lean Startup I · ImpacTech', tag: 'Aprendizaje validado' },
+  ],
+];
+
+let tipIdx = 0;
+function getTip(step) {
+  const arr = TIPS[step] || TIPS[0];
+  // Contextual selection
+  const name = val('project-name');
+  const problem = val('problem-desc');
+  const who = val('who');
+  if (step === 0) {
+    if (!name) return arr[0];
+    if (name && !problem) return arr[1];
+    if (problem && !who) return arr[2];
+    return arr[3];
+  }
+  if (step === 1) {
+    const tags = document.getElementById('assumptions')?.children.length || 0;
+    if (!tags) return arr[0];
+    if (tags < 3) return arr[1];
+    return arr[2];
+  }
+  if (step === 2) {
+    const pw = val('hyp-p-who'), pp = val('hyp-p-problem'), ss = val('hyp-s-sol');
+    if (!pw) return arr[0];
+    if (!pp) return arr[1];
+    if (!ss) return arr[2];
+    return arr[3];
+  }
+  if (step === 3) {
+    const d = val('dfv-des'), f = val('dfv-fac'), v = val('dfv-via');
+    if (!d) return arr[0];
+    if (!f) return arr[2];
+    if (!v) return arr[2];
+    return arr[3];
+  }
+  if (step === 4) {
+    const h = val('mvp-hyp'), b = val('mvp-build'), t = val('mvp-test'), m = val('mvp-metric');
+    if (!h) return arr[0];
+    if (!b) return arr[2];
+    if (!t) return arr[2];
+    if (!m) return arr[3];
+    return arr[1];
+  }
+  return arr[0];
+}
+function refreshTip() {
+  const tip = getTip(currentStep);
+  const el = document.getElementById('tip-text');
+  const auth = document.getElementById('tip-author');
+  const tag = document.getElementById('tip-tag');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.textContent = tip.text;
+    auth.textContent = tip.author || '';
+    if (tip.tag) { tag.textContent = tip.tag; tag.style.display = 'inline-block'; }
+    else tag.style.display = 'none';
+    el.style.opacity = '1';
+  }, 200);
+}
+
+// ── NAV ──
+function goTo(step) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('complete-screen').classList.remove('active');
+  document.querySelectorAll('.nav-item').forEach((n, i) => {
+    n.classList.remove('active');
+    if (i < step) { n.classList.add('done'); const c = n.querySelector('.nav-check'); if (!c) { const ch = document.createElement('span'); ch.className='nav-check'; ch.textContent='✓'; n.appendChild(ch); } }
+    else { n.classList.remove('done'); const c = n.querySelector('.nav-check'); if(c) c.remove(); }
+  });
+  document.getElementById(`step-${step}`).classList.add('active');
+  document.getElementById(`nav-${step}`).classList.add('active');
+  currentStep = step;
+  const pct = Math.round(((step+1)/5)*100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `Paso ${step+1} de 5`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('tb-step').textContent = stepNames[step];
+  prefill(step);
+  updatePreview();
+  refreshTip();
+  document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── PREFILL ──
+function prefill(step) {
+  const problem = val('problem-desc'), who = val('who'), alts = val('alternatives');
+  if (step === 1) {
+    const w0 = document.getElementById('why-0');
+    if (w0 && !w0.value && problem) { w0.value = problem; markAuto(w0, 'Paso 1'); }
+    const ai = document.getElementById('assumption-input');
+    if (ai && who) ai.placeholder = `Ej: "Asumo que ${who} tiene este problema y le duele lo suficiente para actuar"`;
+  }
+  if (step === 2) {
+    setIfEmpty('hyp-p-who', who, 'Paso 1 — Usuario');
+    setIfEmpty('hyp-p-problem', problem?.substring(0,120), 'Paso 1 — Problema');
+    setIfEmpty('hyp-p-alt', alts, 'Paso 1 — Alternativas');
+    setIfEmpty('hyp-b-who', who, 'Paso 1 — Usuario');
+    buildHypP(); buildHypS(); buildHypB();
+  }
+  if (step === 4) {
+    const bizPrev = document.getElementById('hyp-b-preview')?.innerText || '';
+    const probPrev = document.getElementById('hyp-p-preview')?.innerText || '';
+    const src = (bizPrev && !bizPrev.includes('aparecerá')) ? bizPrev : probPrev;
+    if (src && !src.includes('aparecerá')) setIfEmpty('mvp-hyp', src.replace(/\s+/g,' ').trim(), 'Paso 3 — Hipótesis');
+    const risk = val('dfv-risk');
+    const mf = document.getElementById('mvp-fail');
+    if (mf && !mf.value && risk) mf.placeholder = `Basándote en tu DFV: "${risk.substring(0,80)}..." ¿qué harías?`;
+  }
+}
+function setIfEmpty(id, value, source) {
+  const el = document.getElementById(id);
+  if (el && !el.value && value) { el.value = value; markAuto(el, source); }
+}
+function markAuto(el, src) {
+  if (el._marked) return; el._marked = true;
+  const note = document.createElement('div');
+  note.className = 'autofill-note';
+  note.innerHTML = `✦ Completado desde ${src} — <button class="clear" onclick="clearAuto(this,'${el.id}')">editar</button>`;
+  el.parentNode.insertBefore(note, el.nextSibling);
+}
+function clearAuto(btn, id) {
+  btn.closest('.autofill-note').remove();
+  const el = document.getElementById(id); if(el) { el._marked = false; el.focus(); }
+}
+
+// ── HYPOTHESIS BUILDERS ──
+function buildHypP() {
+  const w = val('hyp-p-who'), p = val('hyp-p-problem'), a = val('hyp-p-alt');
+  const prev = document.getElementById('hyp-p-preview');
+  if (!w && !p) { prev.textContent = 'Tu hipótesis de problema aparecerá aquí...'; prev.classList.remove('has-content'); return; }
+  prev.classList.add('has-content');
+  prev.innerHTML = `Creemos que <span class="hyp-blank">${w||'...'}</span> tiene el problema de <span class="hyp-blank">${p||'...'}</span>, y que actualmente lo resuelve <span class="hyp-blank">${a||'...'}</span> de forma insuficiente.`;
+  updatePreview(); refreshTip();
+}
+function buildHypS() {
+  const s = val('hyp-s-sol'), v = val('hyp-s-val');
+  const prev = document.getElementById('hyp-s-preview');
+  if (!s && !v) { prev.textContent = 'Tu hipótesis de solución aparecerá aquí...'; prev.classList.remove('has-content'); return; }
+  prev.classList.add('has-content');
+  prev.innerHTML = `Creemos que <span class="hyp-blank">${s||'...'}</span> resuelve el problema mejor que las alternativas actuales, porque <span class="hyp-blank">${v||'...'}</span>.`;
+}
+function buildHypB() {
+  const w = val('hyp-b-who'), h = val('hyp-b-how');
+  const prev = document.getElementById('hyp-b-preview');
+  if (!w && !h) { prev.textContent = 'Tu hipótesis de negocio aparecerá aquí...'; prev.classList.remove('has-content'); return; }
+  prev.classList.add('has-content');
+  prev.innerHTML = `Creemos que <span class="hyp-blank">${w||'...'}</span> estará dispuesto/a a pagar <span class="hyp-blank">${h||'...'}</span> por nuestra solución.`;
+  refreshTip();
+}
+
+// ── TAGS ──
+function addTag() {
+  const input = document.getElementById('assumption-input');
+  const v = input.value.trim(); if (!v) return;
+  const wrap = document.getElementById('assumptions');
+  const tag = document.createElement('div'); tag.className = 'tag';
+  tag.innerHTML = `<span>${v}</span><span class="tag-del" onclick="this.parentElement.remove();onInput()">×</span>`;
+  wrap.appendChild(tag); input.value = ''; input.focus();
+  refreshTip(); onInput();
+}
+
+// ── CERTAINTY ──
+let _certColor = 'red';
+function selectCert(btn, color) {
+  document.querySelectorAll('.cert-btn').forEach(b => b.classList.remove('sel-red','sel-yellow','sel-green'));
+  btn.classList.add(`sel-${color}`); _certColor = color;
+}
+function addCertainty() {
+  const item = document.getElementById('cert-item').value.trim(); if (!item) return;
+  const list = document.getElementById('certainty-list');
+  const map = { red: { bg:'#fef2f2', bc:'#fca5a5', ic:'❓', label:'No sé', color:'var(--danger)' },
+                yellow: { bg:'#fffbeb', bc:'#fcd34d', ic:'🤔', label:'Intuyo', color:'var(--warn)' },
+                green: { bg:'var(--accent-bg)', bc:'var(--accent-border)', ic:'✅', label:'Seguro', color:'#16a34a' } };
+  const c = map[_certColor];
+  const row = document.createElement('div'); row.className = 'cert-item';
+  row.style.cssText = `background:${c.bg};border-color:${c.bc}`;
+  row.innerHTML = `<span>${c.ic}</span><span style="flex:1">${item}</span><span style="font-size:11px;color:${c.color};font-weight:600">${c.label}</span><span style="cursor:pointer;color:var(--muted)" onclick="this.parentElement.remove()">×</span>`;
+  list.appendChild(row); document.getElementById('cert-item').value = '';
+  refreshTip(); onInput();
+}
+
+// ── 5 WHYS ──
+let _whyCount = 0;
+function addWhy() {
+  if (_whyCount >= 4) return; _whyCount++;
+  const container = document.getElementById('why-extra');
+  const div = document.createElement('div'); div.className = 'why-row';
+  div.innerHTML = `
+    <div class="why-left"><div class="why-line"></div><div class="why-num">${_whyCount}</div>${_whyCount < 4 ? '<div class="why-line"></div>' : ''}</div>
+    <div class="why-content">
+      <div class="why-field-label">¿Por qué? #${_whyCount}</div>
+      <input type="text" placeholder="Respuesta..." oninput="onInput()">
+    </div>`;
+  container.appendChild(div);
+}
+
+// ── DFV SEMAFORO ──
+function setSem(btn, prefix, level) {
+  const row = btn.closest('.semaforo');
+  row.querySelectorAll('.sem-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel'); onInput();
+}
+
+// ── PREVIEW ──
+function updatePreview() {
+  const name = val('project-name'), who = val('who'), problem = val('problem-desc');
+  const hypP = document.getElementById('hyp-p-preview')?.innerText || '';
+  const mvp = val('mvp-build');
+  let html = '';
+  if (name) html += `<div class="preview-item"><div class="preview-item-title">Proyecto</div><div class="preview-item-text">${name}${who ? ' · ' + who : ''}</div></div>`;
+  if (problem) html += `<div class="preview-item"><div class="preview-item-title">Problema</div><div class="preview-item-text">${problem.substring(0,90)}${problem.length>90?'...':''}</div></div>`;
+  if (hypP && !hypP.includes('aparecerá')) html += `<div class="preview-item"><div class="preview-item-title">Hipótesis</div><div class="preview-item-text">${hypP.substring(0,90)}...</div></div>`;
+  if (mvp) html += `<div class="preview-item"><div class="preview-item-title">MVP</div><div class="preview-item-text">${mvp.substring(0,90)}${mvp.length>90?'...':''}</div></div>`;
+  document.getElementById('preview-area').innerHTML = html || '<p style="font-size:12px;color:var(--muted)">Empieza a escribir para ver el resumen aquí.</p>';
+}
+
+// ── COMPLETE ──
+function showComplete() {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('active'); n.classList.add('done'); });
+  document.getElementById('complete-screen').classList.add('active');
+  document.getElementById('prog-fill').style.width = '100%';
+  document.getElementById('prog-label').textContent = '¡Completado!';
+  document.getElementById('prog-pct').textContent = '100%';
+  const fields = [
+    ['Proyecto', val('project-name') + (val('who') ? ' · ' + val('who') : '')],
+    ['Problema', val('problem-desc')],
+    ['Hipótesis de problema', document.getElementById('hyp-p-preview')?.innerHTML],
+    ['Hipótesis de solución', document.getElementById('hyp-s-preview')?.innerHTML],
+    ['Hipótesis de negocio', document.getElementById('hyp-b-preview')?.innerHTML],
+    ['Riesgo crítico (DFV)', val('dfv-risk')],
+    ['MVP', val('mvp-build')],
+    ['Métrica de éxito', val('mvp-metric')],
+  ];
+  document.getElementById('final-grid').innerHTML = fields.filter(([,v]) => v && !v.includes('aparecerá')).map(([t,v]) => `<div class="final-card"><div class="final-card-title">${t}</div><div class="final-card-text">${v}</div></div>`).join('');
+  document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'});
+  saveData();
+}
+
+// ── SAVE ──
+function onInput() {
+  updatePreview(); refreshTip();
+  clearTimeout(saveTimer);
+  setSaveStatus('saving');
+  saveTimer = setTimeout(saveData, 1500);
+}
+
+function setSaveStatus(status) {
+  const dot = document.getElementById('save-dot'), label = document.getElementById('save-label');
+  dot.className = 'save-dot ' + status;
+  if (status === 'saved') label.textContent = 'Guardado';
+  else if (status === 'saving') label.textContent = 'Guardando...';
+  else label.textContent = 'Sin cambios';
+}
+
+function collectData() {
+  return {
+    project_name: val('project-name'),
+    problem_desc: val('problem-desc'),
+    who: val('who'),
+    where: val('where'),
+    alternatives: val('alternatives'),
+    why_0: val('why-0'),
+    hyp_p_who: val('hyp-p-who'),
+    hyp_p_problem: val('hyp-p-problem'),
+    hyp_p_alt: val('hyp-p-alt'),
+    hyp_s_sol: val('hyp-s-sol'),
+    hyp_s_val: val('hyp-s-val'),
+    hyp_b_who: val('hyp-b-who'),
+    hyp_b_how: val('hyp-b-how'),
+    dfv_des: val('dfv-des'),
+    dfv_fac: val('dfv-fac'),
+    dfv_via: val('dfv-via'),
+    dfv_risk: val('dfv-risk'),
+    mvp_hyp: val('mvp-hyp'),
+    mvp_build: val('mvp-build'),
+    mvp_test: val('mvp-test'),
+    mvp_metric: val('mvp-metric'),
+    mvp_fail: val('mvp-fail'),
+    mvp_resources: val('mvp-resources'),
+    mvp_timeline: val('mvp-timeline'),
+    current_step: currentStep,
+  };
+}
+
+async function saveData() {
+  const data = collectData();
+  // Always save to localStorage
+  localStorage.setItem('lean_canvas_data', JSON.stringify(data));
+  // Save to Supabase if configured
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('canvas_sessions').upsert({
+        session_id: sessionId,
+        step_data: data,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'session_id' });
+      if (error) throw error;
+    } catch(e) { console.warn('Error guardando en Supabase:', e); }
+  }
+  setSaveStatus('saved');
+  setTimeout(() => setSaveStatus(''), 2000);
+}
+
+async function loadData() {
+  let data = null;
+  // Try Supabase first
+  if (supabase) {
+    try {
+      const { data: rows } = await supabase.from('canvas_sessions').select('step_data').eq('session_id', sessionId).single();
+      if (rows?.step_data) data = rows.step_data;
+    } catch(e) { console.warn('No se pudo cargar de Supabase:', e); }
+  }
+  // Fallback to localStorage
+  if (!data) {
+    const local = localStorage.getItem('lean_canvas_data');
+    if (local) { try { data = JSON.parse(local); } catch(e) {} }
+  }
+  if (!data) return;
+  // Populate fields
+  Object.entries(data).forEach(([key, value]) => {
+    const fieldId = key.replace(/_/g, '-');
+    const el = document.getElementById(fieldId);
+    if (el && typeof value === 'string') el.value = value;
+  });
+  buildHypP(); buildHypS(); buildHypB();
+  updatePreview();
+  if (data.current_step) goTo(data.current_step);
+}
+
+// ── UTIL ──
+function val(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  refreshTip();
+  // Rotate tips every 15s while idle
+  setInterval(() => {
+    if (!document.hasFocus()) return;
+    const arr = TIPS[currentStep] || TIPS[0];
+    tipIdx = (tipIdx + 1) % arr.length;
+    const tip = arr[tipIdx];
+    const el = document.getElementById('tip-text');
+    const auth = document.getElementById('tip-author');
+    const tag = document.getElementById('tip-tag');
+    if (!el) return;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = tip.text; auth.textContent = tip.author; if(tip.tag){tag.textContent=tip.tag;tag.style.display='inline-block';}else{tag.style.display='none';} el.style.opacity = '1'; }, 200);
+  }, 15000);
+});
+</script>
+</body>
+</html>
